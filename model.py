@@ -8,8 +8,8 @@ class Model:
         self.database = database
         self.activeUser = None
 
-    def create_user(self, user_data):
-        action, message = self.database.create_user(user_data)
+    def create_user(self, userData):
+        action, message = self.database.create_user(userData)
 
         return action, message
     
@@ -26,7 +26,7 @@ class Model:
 
         cleanser = self.generate_cleanser(skinWorries, result)
         treatmentAM = self.generate_AM_treatment(skinWorries, result)
-        moisturizerAM = self.generate_AM_treatment(skinWorries, result)
+        moisturizerAM = self.generate_AM_moisturizer(skinWorries, result)
         sunscreen = self.generate_sun_protection(skinWorries, result)
         treatmentPM = self.generate_PM_treatment(skinWorries, result)
         moisturizerPM = self.generate_PM_moisturizer(skinWorries, result)
@@ -40,8 +40,18 @@ class Model:
             return routine
         
     def get_routine(self):
-        routine = self.database.get_routine(self.activeUser)
-        return routine
+        result = self.database.read_routine(self.activeUser)
+        
+        if result:
+            routine = Routine(
+                cleanser = result["cleanser"],
+                treatmentAM = result["treatmentAM"],
+                moisturizerAM = result["moisturizerAM"],
+                sunscreen = result["sunscreen"],
+                treatmentPM = result["treatmentPM"],
+                moisturizerPM = result["moisturizerPM"]
+            )
+            return routine
 
     def generate_cleanser(self, skinWorries, result):
         ageOver45 = self.get_age(result) >= 45
@@ -142,7 +152,14 @@ class Model:
 
         return age
 
+    def create_entry(self, entryData):
+        user = self.database.get_user_data(self.activeUser) 
 
+        if not user:
+            print("USUÁRIO NÃO ENCONTRADO")
 
+        action, message = self.database.create_entry(entryData, user)
+
+        return action, message
             
             

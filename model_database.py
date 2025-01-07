@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from pymongo.errors import ConnectionFailure, DuplicateKeyError, OperationFailure
 from model_authentication import Authentication
+import gridfs
 
 
 
@@ -13,16 +14,16 @@ class Database:
         self.authentication = Authentication()
         self.activeUser = None
 
-    def create_user(self, user_data):
+    def create_user(self, userData):
             collection = self.database["Users"]
 
             query = {
-                "name": user_data.username,
-                "password": user_data.password,
-                "email": user_data.email,
-                "birthday": user_data.birthday,
-                "skinType": user_data.skinType,
-                "sensibility": user_data.sensitivity
+                "name": userData.username,
+                "password": userData.password,
+                "email": userData.email,
+                "birthday": userData.birthday,
+                "skinType": userData.skinType,
+                "sensibility": userData.sensitivity
             }
 
             unique_index = "name"
@@ -55,12 +56,10 @@ class Database:
         except Exception as error:
             print("CLASSDATABASE - erro ao procurar dados do usuário")
 
-
     def save_routine(self, routine):
-        collection = self.database["Routines"]
+        collection = self.database["Users"]
 
-        query = {
-            "user_id": self.activeUser["_id"],
+        routineSubdocument = {
             "cleanser": routine.cleanser,
             "treatmentAM": routine.treatmentAM,
             "moisturizerAM": routine.moisturizerAM,
@@ -70,21 +69,78 @@ class Database:
         }
 
         try:
-            action = collection.insert_one(query)
+            action = collection.update_one(
+                {"_id": self.activeUser["_id"]},
+                {"$set": {"routine": routineSubdocument}}    
+            )
             print("CLASSDATABASE - rotina salva")
             return True
         
         except OperationFailure as error:
-            print("CLASSDATABaSE - falha ao salvar rotina")
+            print("CLASSDATABASE - falha ao salvar rotina")
             return False
             
-    def get_routine(self, username):
-        collection = self.database["Routines"]
+    def read_routine(self, username):
+        collection = self.database["Users"]
 
         try:
-            routine = collection.find_one({"name": username})
-            print("CLASSDATABASE - rotina encontrada")
-            return routine
+            result = collection.find_one(
+                {"name": username},
+                {"_id": 0, "routine": 1}
+            )
+
+            if result and "routine" in result:
+                print("CLASSDATABASE - rotina encontrada")
+                return result["routine"]
+            else:
+                print("CLASSDATABASE - rotina não encontrada")
         
         except Exception as error:
-            print("CLASSDATABASE - rotina não encontrada")
+            print("CLASSDATABASE - rotina não encontrada: ", error)
+
+    def create_entry(self, entryData, user):
+        collection = self.database["Entries"]
+        fs = gridfs.GridFS(self.database, collection= "Entries")
+
+        query = {
+            "date": entryData.date
+        }
+
+        if entryData.description:
+            query["description"] = entryData.description
+
+        if entryData.image:
+            try:
+                with open(entryData.image, "rb") as imageFile:
+                    fileId = fs.put(imageFile, filename = entryData.image.split("/")[-1])
+                    query["image_id"] = fileId
+                    print(f"CLASSDATABASE - imagem salva no gridFS com ID: {fileId}")
+
+            except Exception as e:
+                print("CLASSDATABASE - Erro ao salvar imagem:", e)
+
+        try:
+            action = collection.insert_one(query)
+            entryId = action.inserted_id
+            self.add_entry_to_diary(entryId, user)
+            print("CLASSDATABASE - entrada salva")
+            return True, {"title": "Sucesso!", "description": "Entrada salva"}
+        
+        except OperationFailure as error:
+            print("CLASSDATABASE - falha ao salvar entrada") 
+            return False, {"title": "Falha ao salvar", "description": error}
+
+    def add_entry_to_diary(self, entryId, user):
+        collection = self.database["Users"]
+
+        try:
+            action = collection.update_one(
+                {"_id": user["_id"]},
+                {"$push": {"diary": entryId}}
+            )
+            print("CLASSDATABASE - entrada salva no diário")
+        
+        except OperationFailure as error:
+            print(f"CLASSDATABASE - erro ao salvar entrada no diário: {error}")
+
+

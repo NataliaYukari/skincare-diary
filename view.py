@@ -1,6 +1,7 @@
 from controller import Controller
 import flet as ft
 from user import User
+from entry import Entry
 from skin_concerns import SkinConcerns
 
 
@@ -9,6 +10,7 @@ class View:
     
     def __init__(self):
         self.controller = None
+        self.image_path = None
 
         self.BEIGE = "#F2F1E9"
         self.DEEPBEIGE = "#F0D2AB"
@@ -280,10 +282,10 @@ class View:
         skinType = self.skinTypeDropdown.value
         sensitivity = self.sensitivityCheckbox.value
 
-        user_data = User(username, password, email, 
+        userData = User(username, password, email, 
                          birthday, skinType, sensitivity)
 
-        self.controller.validate_user_data(user_data)
+        self.controller.validate_user_data(userData)
 
     def main_screen(self):
         title = ft.Text(
@@ -322,6 +324,7 @@ class View:
 
         addNewEntryButton = ft.FilledButton(
             text= "Adicionar nova entrada",
+            on_click= self.go_to_add_entry_screen,
             width= 390,
             height= 50,
             style= ft.ButtonStyle(
@@ -385,14 +388,10 @@ class View:
     def go_to_recommended_routine_screen(self, e):
         self.controller.go_to_recommended_routine_screen()
 
-    def add_entry_screen(self):
+    def go_to_add_entry_screen(self, e):
+        self.controller.go_to_add_entry_screen()
 
-        image = ft.Image(
-            src= f"assets/images/produtos.jpg",
-            width= 535,
-            height= 660,
-            fit= ft.ImageFit.CONTAIN
-        )
+    def add_entry_screen(self):
 
         title = ft.Text(
             "Adicionar nova entrada", font_family= "AlbertSans",
@@ -404,7 +403,7 @@ class View:
             theme_style= ft.TextThemeStyle.HEADLINE_SMALL
         )
 
-        dateTextfield = ft.TextField(
+        self.dateTextfield = ft.TextField(
             width= 390, 
             height= 40,
             border= ft.InputBorder.OUTLINE, border_color= self.WHITE,
@@ -417,7 +416,7 @@ class View:
             theme_style= ft.TextThemeStyle.HEADLINE_SMALL
         )
 
-        descriptionTextfield = ft.TextField(
+        self.descriptionTextfield = ft.TextField(
             multiline= True,
             min_lines= 10,
             width= 390,
@@ -426,8 +425,11 @@ class View:
             filled= True, fill_color= self.WHITE
         )
 
+        filePicker = ft.FilePicker(on_result= self.entry_image_upload)
+
         imageUploadButton = ft.FilledButton(
             text= "Upload de foto",
+            on_click= lambda _: filePicker.pick_files(),
             width=  240,
             height= 33,
             style= ft.ButtonStyle(
@@ -443,6 +445,7 @@ class View:
             text= "Deletar foto",
             width= 190,
             height= 33,
+            on_click= self.entry_image_delete,
             style= ft.ButtonStyle(
                 bgcolor= self.LIGHTGRAY,
                 shape= ft.RoundedRectangleBorder(radius= 12),
@@ -452,8 +455,8 @@ class View:
             )
         )
 
-        imageContainer = ft.Container(
-            content= image,
+        self.addImageContainer = ft.Container(
+            content= None,
             width= 450,
             height= 375,
             bgcolor= self.WHITE, 
@@ -462,6 +465,7 @@ class View:
 
         addEntryButton = ft.FilledButton(
             text= "Adicionar",
+            on_click= self.create_entry,
             style= ft.ButtonStyle(
                 padding= ft.Padding(40, 10, 40, 10),
                 bgcolor= {"": self.ROSEQUARTZ, "hovered": self.PALESALMON},
@@ -471,8 +475,8 @@ class View:
 
         leftColumn = ft.Column(
             controls= [
-                title, dateLabel, dateTextfield, 
-                descriptionLabel, descriptionTextfield
+                title, dateLabel, self.dateTextfield, 
+                descriptionLabel, self.descriptionTextfield
             ],
             alignment= ft.MainAxisAlignment.CENTER,
             horizontal_alignment= ft.CrossAxisAlignment.START,
@@ -486,14 +490,14 @@ class View:
         )
 
         rightColumn = ft.Column(
-            controls= [ft.Container(height= 30), imageButtonRow, imageContainer],
+            controls= [ft.Container(height= 30), imageButtonRow, self.addImageContainer],
             alignment= ft.MainAxisAlignment.CENTER,
             horizontal_alignment= ft.CrossAxisAlignment.CENTER,
             spacing= 15
         )
 
         buttonRow =  ft.Row(
-            controls= [self.return_button(), addEntryButton],
+            controls= [self.return_button(self.return_to_main), addEntryButton],
             alignment= ft.MainAxisAlignment.CENTER,
             vertical_alignment= ft.CrossAxisAlignment.CENTER,
             spacing= 60
@@ -506,16 +510,49 @@ class View:
             spacing= 40
         )
 
-        addEntryFrame = ft.View(
-            route = "/",
+        mainColumn = ft.Column(
             controls= [mainRow, buttonRow],
             horizontal_alignment= ft.MainAxisAlignment.CENTER,
-            padding= ft.padding.all(40),
             spacing= 40
         )
-        addEntryFrame.bgcolor = self.BEIGE
-        return addEntryFrame
-        
+
+        mainContainer = ft.Container(
+            content= mainColumn,
+            alignment= ft.alignment.center,
+            margin= ft.margin.only(top= 80)
+        )
+
+        self.page.clean()
+        self.page.add(mainContainer)
+        self.page.add(filePicker)
+        self.page.update()
+
+    def entry_image_upload(self, e):
+        if e.files:
+            self.image_path = e.files[0].path
+
+        image = ft.Image(
+            src= self.image_path, 
+            width= 535,
+            height= 660,
+            fit= ft.ImageFit.CONTAIN
+        )
+
+        self.addImageContainer.content = image
+        self.page.update()
+
+    def entry_image_delete(self, e):
+        self.addImageContainer.content = None
+        self.page.update()
+
+    def create_entry(self, e):
+        date = self.dateTextfield.value
+        description = self.descriptionTextfield.value
+        image = self.image_path
+
+        entryData = Entry(date, description, image)
+        self.controller.create_entry(entryData)
+
     def  new_routine_screen(self):
         title = ft.Text(
             "Nova rotina", font_family= "AlbertSans",
@@ -769,7 +806,7 @@ class View:
                     ),
                 ft.Text(
                     routine.treatmentAM, 
-                    theme_style= ft.TextThemeStyle.TITLE_LARGE
+                    theme_style= ft.TextThemeStyle.TITLE_MEDIUM
                 )
             ],
             spacing= 10
@@ -781,8 +818,8 @@ class View:
                     theme_style= ft.TextThemeStyle.TITLE_LARGE
                     ),
                 ft.Text(
-                    routine.treatmentAM, 
-                        theme_style= ft.TextThemeStyle.TITLE_LARGE
+                    routine.moisturizerAM, 
+                        theme_style= ft.TextThemeStyle.TITLE_MEDIUM
                 )
             ],
             spacing= 10
@@ -795,7 +832,7 @@ class View:
                     ),
                 ft.Text(
                     routine.sunscreen, 
-                    theme_style= ft.TextThemeStyle.TITLE_LARGE
+                    theme_style= ft.TextThemeStyle.TITLE_MEDIUM
                 )
             ],
             spacing= 10
@@ -808,8 +845,8 @@ class View:
                     theme_style= ft.TextThemeStyle.TITLE_LARGE
                     ),
                 ft.Text(
-                    "Cleansing oil" + routine.cleanser, 
-                    theme_style= ft.TextThemeStyle.TITLE_LARGE
+                    "Cleansing oil + " + routine.cleanser, 
+                    theme_style= ft.TextThemeStyle.TITLE_MEDIUM
                 )
             ],
             spacing= 10
@@ -822,7 +859,7 @@ class View:
                     ),
                 ft.Text(
                     routine.treatmentPM,
-                    theme_style= ft.TextThemeStyle.TITLE_LARGE
+                    theme_style= ft.TextThemeStyle.TITLE_MEDIUM
                 )
             ],
             spacing= 10
@@ -835,7 +872,7 @@ class View:
                     ),
                 ft.Text(
                     routine.moisturizerPM,
-                    theme_style= ft.TextThemeStyle.TITLE_LARGE
+                    theme_style= ft.TextThemeStyle.TITLE_MEDIUM
                 )
             ],
             spacing= 10
@@ -845,6 +882,11 @@ class View:
             [title, subtitle],
             alignment= ft.MainAxisAlignment.CENTER,
             horizontal_alignment= ft.CrossAxisAlignment.START
+        )
+
+        titleContainer = ft.Container(
+            content= titleColumn,
+            margin= ft.margin.only(left= 40)
         )
 
         leftColumn = ft.Column(
@@ -871,11 +913,17 @@ class View:
             [leftColumn, rightColumn],
             alignment= ft.MainAxisAlignment.CENTER,
             vertical_alignment= ft.CrossAxisAlignment.CENTER,
-            spacing= 200
+            spacing= 100
+        )
+
+        buttonRow = ft.Row(
+            [self.return_button(self.return_to_main)],
+            alignment= ft.MainAxisAlignment.CENTER,
+            vertical_alignment= ft.CrossAxisAlignment.CENTER
         )
 
         mainColumn = ft.Column(
-            [titleColumn, mainRow, self.return_button(self.return_to_main)],
+            [titleContainer, mainRow, buttonRow],
             alignment= ft.MainAxisAlignment.CENTER,
             horizontal_alignment= ft.CrossAxisAlignment.START,
             spacing= 60
@@ -883,6 +931,7 @@ class View:
 
         mainContainer = ft.Container(
             content= mainColumn,
+            margin= ft.margin.only(top= 100),
             alignment= ft.alignment.center
         )
 
