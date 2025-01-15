@@ -44,7 +44,12 @@ class Database:
                                "description": "O usuário já existe"}
         
     def validate_login(self, login, password):
-        return self.authentication.validate_login(login, password)
+        isValid, message = self.authentication.validate_login(login, password)
+
+        if isValid:
+            self.activeUser = login
+
+        return isValid, message
 
     def get_user_data(self, username):
         collection = self.database["Users"]
@@ -80,12 +85,12 @@ class Database:
             print("CLASSDATABASE - falha ao salvar rotina")
             return False
             
-    def read_routine(self, username):
+    def read_routine(self):
         collection = self.database["Users"]
 
         try:
             result = collection.find_one(
-                {"name": username},
+                {"name": self.activeUser},
                 {"_id": 0, "routine": 1}
             )
 
@@ -98,7 +103,7 @@ class Database:
         except Exception as error:
             print("CLASSDATABASE - rotina não encontrada: ", error)
 
-    def create_entry(self, entryData, user):
+    def create_entry(self, entryData):
         collection = self.database["Entries"]
         fs = gridfs.GridFS(self.database, collection= "Entries")
 
@@ -122,25 +127,47 @@ class Database:
         try:
             action = collection.insert_one(query)
             entryId = action.inserted_id
-            self.add_entry_to_diary(entryId, user)
-            print("CLASSDATABASE - entrada salva")
-            return True, {"title": "Sucesso!", "description": "Entrada salva"}
+            self.add_entry_to_diary(entryId, self.activeUser)
+            print("CLASSDATABASE - entrada salva no banco de entradas")
+            return True, {"title": "Entrada salva", "description": "Entrada salva"}
         
         except OperationFailure as error:
             print("CLASSDATABASE - falha ao salvar entrada") 
             return False, {"title": "Falha ao salvar", "description": error}
 
-    def add_entry_to_diary(self, entryId, user):
+    def add_entry_to_diary(self, entryId):
         collection = self.database["Users"]
 
         try:
             action = collection.update_one(
-                {"_id": user["_id"]},
+                {"name": self.activeUser},
                 {"$push": {"diary": entryId}}
             )
-            print("CLASSDATABASE - entrada salva no diário")
+            print("CLASSDATABASE - entrada salva no diário do usuário")
         
         except OperationFailure as error:
             print(f"CLASSDATABASE - erro ao salvar entrada no diário: {error}")
 
+    def get_diary(self):
+        users_collection = self.database["Users"]
+        entries_collection = self.database["Entries"]
 
+        try:
+            user = users_collection.find_one({"name": self.activeUser})
+
+            if user:
+                diary = user.get("diary")
+
+                if diary and isinstance(diary, list):
+                    entries = list(entries_collection.find(
+                        {"_id": {"$in": diary}}
+                    )) 
+                    print("CLASSDATABASE - Entradas do diário recuperadas")
+                    return entries
+                else:
+                    print("CLASSDATABASE - Nenhuma entrada encontrada")
+            else:
+                print("CLASSDATABASE - Atributo diário não possui uma lista válida")
+
+        except OperationFailure as error:
+            print(f"CLASSDATABASE - Entradas do diário não puderam ser recuperadas: {error}")

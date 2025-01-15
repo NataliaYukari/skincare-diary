@@ -62,14 +62,18 @@ class Controller:
         self.view.add_entry_screen()
 
     def create_entry(self, entryData):
-        #try:
+        try:
             action, message = self.model.create_entry(entryData)
 
-            '''if action:
+            if action:
                 self.view.success_alert_modal(message["title"], message["description"])
             else:
                 self.view.fail_alert_modal(message["title"], message["description"])
 
         except Exception as e:
             message = "criar página do diário"
-            self.view.fail_alert_modal(message, e)'''
+            self.view.fail_alert_modal(message, e)
+
+    def go_to_diary_screen(self):
+        result = self.model.get_diary()
+        self.view.diary_screen(result)

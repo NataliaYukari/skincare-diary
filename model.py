@@ -153,13 +153,9 @@ class Model:
         return age
 
     def create_entry(self, entryData):
-        user = self.database.get_user_data(self.activeUser) 
-
-        if not user:
-            print("USUÁRIO NÃO ENCONTRADO")
-
-        action, message = self.database.create_entry(entryData, user)
+        action, message = self.database.create_entry(entryData)
 
         return action, message
             
-            
+    def get_diary(self):
+        return self.database.get_diary()       

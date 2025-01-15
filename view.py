@@ -338,6 +338,7 @@ class View:
         )
         showDiaryButton = ft.FilledButton(
             text= "Diário de progresso",
+            on_click= self.go_to_diary_screen,
             width= 390,
             height= 50,
             style= ft.ButtonStyle(
@@ -390,6 +391,9 @@ class View:
 
     def go_to_add_entry_screen(self, e):
         self.controller.go_to_add_entry_screen()
+
+    def go_to_diary_screen(self, e):
+        self.controller.go_to_diary_screen()
 
     def add_entry_screen(self):
 
@@ -939,21 +943,31 @@ class View:
         self.page.add(mainContainer)
         self.page.update()
 
-    def diary_screen(self):
-
+    def diary_screen(self, entries_list):
+        
         title = ft.Text(
             "Diário de progresso", font_family= "AlbertSans",
             theme_style= ft.TextThemeStyle.DISPLAY_SMALL
         )
 
-        entries = ft.GridView(
-            controls= [
-                ft.FilledButton(text= "botão1"), ft.FilledButton(text= "botão2")
-            ],
+        self.entries = ft.GridView(
             auto_scroll= True, 
             runs_count= 4,
+            max_extent= 250,
             spacing= 20,
-            run_spacing= 40
+            run_spacing= 20,
+            #child_aspect_ratio= 2.5
+        )
+
+        titleEntriesColumn = ft.Column(
+            [title, self.entries],
+            alignment= ft.MainAxisAlignment.CENTER, 
+            horizontal_alignment= ft.CrossAxisAlignment.START,
+        )
+
+        mainContainer = ft.Container(
+            content = titleEntriesColumn,
+            margin = ft.margin.only(top=80, left= 100, right= 100)
         )
 
         returnButtonContainer = ft.Container(
@@ -962,18 +976,17 @@ class View:
         )
 
         mainColumn = ft.Column(
-            [title, entries, returnButtonContainer],
+            [mainContainer, returnButtonContainer],
             alignment= ft.MainAxisAlignment.CENTER,
-            horizontal_alignment= ft.CrossAxisAlignment.CENTER,
+            horizontal_alignment= ft.CrossAxisAlignment.START,
             spacing= 30
         )
 
-        diaryScreenFrame = ft.View(
-            route= "/", controls= [mainColumn],
-            padding= ft.padding.only(40, 80, 40, 40)
-        )
-        diaryScreenFrame.bgcolor = self.BEIGE
-        return diaryScreenFrame
+        self.add_button_to_diary_screen(entries_list)
+
+        self.page.clean()
+        self.page.add(mainColumn)
+        self.page.update()
 
     def update_entry_screen(self):
 
@@ -1203,6 +1216,47 @@ class View:
         )
         entryScreenFrame.bgcolor = self.BEIGE
         return entryScreenFrame 
+
+    def add_button_to_diary_screen(self, entries_list):
+        for entry in entries_list:
+            button = ft.Container( 
+                    content= ft.ListTile(    
+                        title= ft.FilledButton(
+                            text= entry["date"],
+                            #on_click= self.go_to_entry_screen(entry["_id"]),
+                            style= ft.ButtonStyle(
+                                color= ft.colors.BLACK,
+                                bgcolor= ft.colors.TRANSPARENT,
+                                overlay_color= ft.colors.TRANSPARENT,
+                                text_style= ft.TextStyle(
+                                    size= 24, 
+                                    decoration= ft.TextDecoration.UNDERLINE,
+                                    font_family= "Albert Sans",
+                                    weight= ft.FontWeight.W_300
+                                )
+                            )
+                        ),
+            
+                        trailing= ft.PopupMenuButton(
+                        icon= ft.icons.MORE_VERT,
+                        items= [
+                            ft.PopupMenuItem(text="Editar", 
+                                #on_click= self.go_to_update_entry_screen(entry["_id"])
+                            ),
+                            ft.PopupMenuItem(text="Excluir"
+                            )
+                        ]
+                        ),
+                    bgcolor= self.PALESALMON 
+                    ),
+                    padding= 10,
+                    border_radius= ft.border_radius.all(15),
+                    alignment= ft.alignment.center,
+                    width= 300
+                )
+            self.entries.controls.append(button)
+
+        self.page.update()
 
     def return_button(self, action):
         returnButton = ft.FilledButton(

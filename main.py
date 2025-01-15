@@ -10,4 +10,3 @@ if __name__ == "__main__":
 
     view.set_controller(controller)
     view.init()
-   
