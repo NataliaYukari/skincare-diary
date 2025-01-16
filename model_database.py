@@ -3,6 +3,7 @@ from pymongo.server_api import ServerApi
 from pymongo.errors import ConnectionFailure, DuplicateKeyError, OperationFailure
 from model_authentication import Authentication
 import gridfs
+from bson import ObjectId
 
 
 
@@ -171,3 +172,28 @@ class Database:
 
         except OperationFailure as error:
             print(f"CLASSDATABASE - Entradas do diário não puderam ser recuperadas: {error}")
+
+    def get_entry(self, entryId):
+        entries_collection = self.database["Entries"]
+        fs = gridfs.GridFS(self.database)
+
+        try:
+            entryData = entries_collection.find_one({"_id": entryId})
+            print("CLASSDATABASE - Entrada encontrada")
+            
+            if "image_id" in entryData:
+                imageId = entryData["image_id"]
+
+                if not isinstance(imageId, ObjectId):
+                    imageId = ObjectId(imageId)
+                    
+                imageFile = fs.get(imageId)
+                imageData = imageFile.read()
+                print("CLASSDATABASE - Imagem da entrada recuperada")
+
+                return entryData, imageData
+            return entryData
+        
+        except Exception as error:
+            print(f"CLASSDATABASE - Erro ao procurar entrada: {error}")
+

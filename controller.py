@@ -77,3 +77,9 @@ class Controller:
     def go_to_diary_screen(self):
         result = self.model.get_diary()
         self.view.diary_screen(result)
+
+    def go_to_entry_screen(self, entryId):
+        entryData, imagePath = self.model.get_entry(entryId)
+
+        if entryData:
+            self.view.entry_screen(entryData)

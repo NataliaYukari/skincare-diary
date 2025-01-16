@@ -956,7 +956,6 @@ class View:
             max_extent= 250,
             spacing= 20,
             run_spacing= 20,
-            #child_aspect_ratio= 2.5
         )
 
         titleEntriesColumn = ft.Column(
@@ -1123,12 +1122,12 @@ class View:
         updateEntryScreenFrame.bgcolor = self.BEIGE
         return updateEntryScreenFrame
 
-    def entry_screen(self):
+    def entry_screen(self, entryData, imagePath):
 
-        entryDate = "Data da entrada"
-        description = "Pele com manchinhas de acne, cravos profundos e acne cística no queixo e parte inferior do rosto. Ressecamento na testa e bochechas."
+        entryDate = entryData["date"]
+        description = entryData["description"]
         image = ft.Image(
-            src= f"assets/images/produtos.jpg",
+            src= imagePath,
             width= 535,
             height= 660,
             fit= ft.ImageFit.CONTAIN
@@ -1209,13 +1208,9 @@ class View:
             spacing= 40
         )
 
-        entryScreenFrame = ft.View(route= "/", controls= [mainColumn],
-            horizontal_alignment= ft.MainAxisAlignment.CENTER,
-            padding= ft.padding.all(60),
-            spacing= 40
-        )
-        entryScreenFrame.bgcolor = self.BEIGE
-        return entryScreenFrame 
+        self.page.clean()
+        self.page.add(mainColumn)
+        self.page.update()
 
     def add_button_to_diary_screen(self, entries_list):
         for entry in entries_list:
@@ -1223,7 +1218,7 @@ class View:
                     content= ft.ListTile(    
                         title= ft.FilledButton(
                             text= entry["date"],
-                            #on_click= self.go_to_entry_screen(entry["_id"]),
+                            on_click= lambda e: self.go_to_entry_screen(entry["_id"]),
                             style= ft.ButtonStyle(
                                 color= ft.colors.BLACK,
                                 bgcolor= ft.colors.TRANSPARENT,
@@ -1257,6 +1252,9 @@ class View:
             self.entries.controls.append(button)
 
         self.page.update()
+
+    def go_to_entry_screen(self, entryId):
+        self.controller.go_to_entry_screen(entryId)
 
     def return_button(self, action):
         returnButton = ft.FilledButton(
