@@ -974,7 +974,7 @@ class View:
             alignment= ft.alignment.center
         )
 
-        mainColumn = ft.Column(
+        self.diaryScreenColumn = ft.Column(
             [mainContainer, returnButtonContainer],
             alignment= ft.MainAxisAlignment.CENTER,
             horizontal_alignment= ft.CrossAxisAlignment.START,
@@ -984,7 +984,7 @@ class View:
         self.add_button_to_diary_screen(entries_list)
 
         self.page.clean()
-        self.page.add(mainColumn)
+        self.page.add(self.diaryScreenColumn)
         self.page.update()
 
     def update_entry_screen(self):
@@ -1124,6 +1124,8 @@ class View:
 
     def entry_screen(self, entryData, imagePath):
 
+        self.page.clean()
+
         entryDate = entryData["date"]
         description = entryData["description"]
         image = ft.Image(
@@ -1195,7 +1197,7 @@ class View:
         )
 
         buttonRow = ft.Row(
-            [self.return_button(), next_button],
+            [self.return_button(self.return_to_diary), next_button],
             alignment= ft.MainAxisAlignment.CENTER,
             vertical_alignment= ft.CrossAxisAlignment.CENTER,
             spacing= 60
@@ -1208,7 +1210,7 @@ class View:
             spacing= 40
         )
 
-        self.page.clean()
+        
         self.page.add(mainColumn)
         self.page.update()
 
@@ -1218,7 +1220,7 @@ class View:
                     content= ft.ListTile(    
                         title= ft.FilledButton(
                             text= entry["date"],
-                            on_click= lambda e: self.go_to_entry_screen(entry["_id"]),
+                            on_click= lambda e, entry=entry: self.go_to_entry_screen(entry["_id"]),
                             style= ft.ButtonStyle(
                                 color= ft.colors.BLACK,
                                 bgcolor= ft.colors.TRANSPARENT,
@@ -1238,7 +1240,8 @@ class View:
                             ft.PopupMenuItem(text="Editar", 
                                 #on_click= self.go_to_update_entry_screen(entry["_id"])
                             ),
-                            ft.PopupMenuItem(text="Excluir"
+                            ft.PopupMenuItem(text="Excluir",
+                                #on_click= self.delete_entry
                             )
                         ]
                         ),
@@ -1279,6 +1282,10 @@ class View:
         self.page.clean()
         self.page.add(self.mainScreenContainer)
 
+    def return_to_diary(self, e):
+        self.page.clean()
+        self.page.add(self.diaryScreenColumn)
+
     def success_alert_modal(self, message, description):
         ok_button = ft.FilledButton(
             text= "Ok",
@@ -1298,7 +1305,7 @@ class View:
             content= ft.Text(description),
             actions= [ok_button],
             actions_alignment= ft.MainAxisAlignment.CENTER,
-            on_dismiss= self.return_to_login
+            on_dismiss= self.return_to_main
         )
 
         self.page.open(self.success_modal)

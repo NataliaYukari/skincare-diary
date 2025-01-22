@@ -3,7 +3,7 @@ from pymongo.server_api import ServerApi
 from pymongo.errors import ConnectionFailure, DuplicateKeyError, OperationFailure
 from model_authentication import Authentication
 import gridfs
-from bson import ObjectId
+import base64
 
 
 
@@ -106,7 +106,7 @@ class Database:
 
     def create_entry(self, entryData):
         collection = self.database["Entries"]
-        fs = gridfs.GridFS(self.database, collection= "Entries")
+        fs = gridfs.GridFS(self.database)
 
         query = {
             "date": entryData.date
@@ -122,8 +122,8 @@ class Database:
                     query["image_id"] = fileId
                     print(f"CLASSDATABASE - imagem salva no gridFS com ID: {fileId}")
 
-            except Exception as e:
-                print("CLASSDATABASE - Erro ao salvar imagem:", e)
+            except Exception as error:
+                print("CLASSDATABASE - Erro ao salvar imagem:", error)
 
         try:
             action = collection.insert_one(query)
@@ -136,12 +136,12 @@ class Database:
             print("CLASSDATABASE - falha ao salvar entrada") 
             return False, {"title": "Falha ao salvar", "description": error}
 
-    def add_entry_to_diary(self, entryId):
+    def add_entry_to_diary(self, entryId, user):
         collection = self.database["Users"]
 
         try:
             action = collection.update_one(
-                {"name": self.activeUser},
+                {"name": user},
                 {"$push": {"diary": entryId}}
             )
             print("CLASSDATABASE - entrada salva no diário do usuário")
@@ -175,25 +175,34 @@ class Database:
 
     def get_entry(self, entryId):
         entries_collection = self.database["Entries"]
-        fs = gridfs.GridFS(self.database)
 
         try:
             entryData = entries_collection.find_one({"_id": entryId})
             print("CLASSDATABASE - Entrada encontrada")
             
             if "image_id" in entryData:
-                imageId = entryData["image_id"]
+                    imageId = entryData["image_id"]
+                    imageBase64 = self.get_entry_image(imageId)
+            else:
+                imageBase64 = None
 
-                if not isinstance(imageId, ObjectId):
-                    imageId = ObjectId(imageId)
-                    
-                imageFile = fs.get(imageId)
-                imageData = imageFile.read()
-                print("CLASSDATABASE - Imagem da entrada recuperada")
-
-                return entryData, imageData
-            return entryData
+            return entryData, imageBase64
         
         except Exception as error:
             print(f"CLASSDATABASE - Erro ao procurar entrada: {error}")
+
+    def get_entry_image(self, imageId):
+        fs = gridfs.GridFS(self.database)
+
+        try:
+            fileData = fs.get(imageId)
+            binaryData = fileData.read()
+            imageBase64 = base64.b64encode(binaryData).decode('utf-8')
+
+            print(f"CLASSDATABASE - Imagem recuperada")
+            return imageBase64
+        
+        except Exception as error:
+            print(f"CLASSDATASE - Erro ao recuperar imagem: {error}")
+            
 

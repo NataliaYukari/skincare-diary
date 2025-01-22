@@ -164,17 +164,8 @@ class Model:
         return self.database.get_diary()       
 
     def get_entry(self, entryId):
-        entryData, imageData = self.database.get_entry(entryId)
+        entryData, imageBase64 = self.database.get_entry(entryId)
+        imagePath = f"data:image/jpeg;base64,{imageBase64}"
 
-        if imageData:
-            imagePath = self.convert_to_base64(imageData)
-            print(imagePath)
-            return entryData, imagePath
-        
-        return entryData
+        return entryData, imagePath
 
-
-    def convert_to_base64(self, imageData):
-        image_code = base64.b64encode(imageData).decode('utf-8')
-        imagePath = f"data: image/jpeg; base64, {image_code}" 
-        return imagePath

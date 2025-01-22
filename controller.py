@@ -82,4 +82,4 @@ class Controller:
         entryData, imagePath = self.model.get_entry(entryId)
 
         if entryData:
-            self.view.entry_screen(entryData)
+            self.view.entry_screen(entryData, imagePath)
