@@ -165,7 +165,11 @@ class Model:
 
     def get_entry(self, entryId):
         entryData, imageBase64 = self.database.get_entry(entryId)
-        imagePath = f"data:image/jpeg;base64,{imageBase64}"
 
-        return entryData, imagePath
-
+        return entryData, imageBase64
+    
+    def delete_entry(self, entry):
+        result, message = self.database.delete_entry(entry)
+        print(entry)
+        
+        return result, message

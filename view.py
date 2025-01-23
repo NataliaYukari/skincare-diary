@@ -1123,13 +1123,10 @@ class View:
         return updateEntryScreenFrame
 
     def entry_screen(self, entryData, imagePath):
-
-        self.page.clean()
-
         entryDate = entryData["date"]
         description = entryData["description"]
         image = ft.Image(
-            src= imagePath,
+            src_base64= imagePath,
             width= 535,
             height= 660,
             fit= ft.ImageFit.CONTAIN
@@ -1210,7 +1207,7 @@ class View:
             spacing= 40
         )
 
-        
+        self.page.clean()
         self.page.add(mainColumn)
         self.page.update()
 
@@ -1238,10 +1235,12 @@ class View:
                         icon= ft.icons.MORE_VERT,
                         items= [
                             ft.PopupMenuItem(text="Editar", 
-                                #on_click= self.go_to_update_entry_screen(entry["_id"])
+                                on_click= lambda e, entry=entry:
+                                self.go_to_update_entry_screen(entry["_id"])
                             ),
                             ft.PopupMenuItem(text="Excluir",
-                                #on_click= self.delete_entry
+                                on_click= lambda e, entry=entry: 
+                                self.delete_entry(entry["_id"])
                             )
                         ]
                         ),
@@ -1258,6 +1257,13 @@ class View:
 
     def go_to_entry_screen(self, entryId):
         self.controller.go_to_entry_screen(entryId)
+
+    def delete_entry(self, entry):
+        self.controller.delete_entry(entry)
+
+    def go_to_update_entry_screen(self, entryId):
+        self.controller.go_to_update_entry_screen(entryId)
+
 
     def return_button(self, action):
         returnButton = ft.FilledButton(

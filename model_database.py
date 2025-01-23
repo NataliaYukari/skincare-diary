@@ -4,6 +4,7 @@ from pymongo.errors import ConnectionFailure, DuplicateKeyError, OperationFailur
 from model_authentication import Authentication
 import gridfs
 import base64
+from bson import ObjectId
 
 
 
@@ -205,4 +206,22 @@ class Database:
         except Exception as error:
             print(f"CLASSDATASE - Erro ao recuperar imagem: {error}")
             
+    def delete_entry(self, entry):
+        entries_collection = self.database["Entries"]
+
+        try:
+            filter = {"_id": ObjectId(entry)}
+            result = entries_collection.delete_one(filter)
+            print(f"CLASSDATABASE - Entrada deletada")
+
+            return True, {"title": "Entrada excluída", "description": ""}
+
+        except Exception as error:
+            print(f"CLASSDATABASE - Erro ao deletar entrada: {error}")
+
+            return False, {"title": "excluir entrada", "description": error}
+
+    
+
+    
 

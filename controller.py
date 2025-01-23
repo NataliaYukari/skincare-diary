@@ -83,3 +83,14 @@ class Controller:
 
         if entryData:
             self.view.entry_screen(entryData, imagePath)
+
+    def delete_entry(self, entry): 
+        result, message = self.model.delete_entry(entry)
+
+        if result == True:
+            self.view.success_alert_modal(message["title"], message["description"])
+        else:
+            self.view.fail_alert_modal(message["title"], message["description"])
+
+    def go_to_update_entry_screen(self, entryId):
+        pass
