@@ -1,9 +1,6 @@
-from model_database import Database
-from routine import Routine
-from datetime import datetime, timedelta
 import base64
-from PIL import Image
-from io import BytesIO
+from datetime import datetime
+from routine import Routine
 
 
 class Model:
@@ -12,9 +9,15 @@ class Model:
         self.activeUser = None
 
     def create_user(self, userData):
-        action, message = self.database.create_user(userData)
+        result, error = self.database.create_user(userData)
 
-        return action, message
+        if result == True:
+            message = {"title": "Cadastrado", "description": ""}
+        else:
+            message = {"title": "cadastrar", 
+                       "description": str(error)}
+
+        return result, message
     
     def validate_login(self, login, password):
         isValid, message = self.database.validate_login(login, password)
@@ -156,20 +159,49 @@ class Model:
         return age
 
     def create_entry(self, entryData):
-        action, message = self.database.create_entry(entryData)
+        result, error = self.database.create_entry(entryData, self.activeUser)
 
-        return action, message
+        if result:
+            message = {"title": "Entrada salva", "description": ""}
+        else:
+            message = {"title": "Falha ao salvar", "description": str(error)}
+        return result, message
             
     def get_diary(self):
-        return self.database.get_diary()       
+        return self.database.get_diary(self.activeUser)       
 
     def get_entry(self, entryId):
         entryData, imageBase64 = self.database.get_entry(entryId)
 
+        if not imageBase64:
+            imageBase64 = self.image_to_base64()
+
         return entryData, imageBase64
     
     def delete_entry(self, entry):
-        result, message = self.database.delete_entry(entry)
-        print(entry)
+        result, error = self.database.delete_entry(entry)
+        
+        if result == True:
+            message = {"title": "Entrada excluída", "description": ""}
+        else:
+            message = {"title": "excluir entrada", "description": str(error)}
         
         return result, message
+    
+    def update_entry(self, entryId, newEntryData):
+        result, error = self.database.update_entry(entryId, newEntryData)
+
+        if result == True:
+            message = {"title": "Entrada atualizada", "description": ""}
+        else:
+            message = {"title": "Falha ao atualizar", "description": str(error)}
+
+        return result, message
+
+    def image_to_base64(self):
+        image = "assets/images/blank_image.jpg"
+
+        with open(image, "rb") as imageFile:
+            encodedImage = base64.b64encode(imageFile.read()).decode("utf-8")
+
+        return encodedImage

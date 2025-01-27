@@ -1,11 +1,10 @@
-from pymongo import MongoClient
-from pymongo.server_api import ServerApi
-from pymongo.errors import ConnectionFailure, DuplicateKeyError, OperationFailure
-from model_authentication import Authentication
-import gridfs
 import base64
 from bson import ObjectId
-
+import gridfs
+from pymongo import MongoClient
+from pymongo.server_api import ServerApi
+from pymongo.errors import DuplicateKeyError, OperationFailure
+from model_authentication import Authentication
 
 
 class Database:
@@ -35,15 +34,15 @@ class Database:
 
             except OperationFailure as error:
                 print(f"CLASSDATABASE - Falha ao criar o índice único: {error}")
+                return False, error
 
             try:
                 action = collection.insert_one(query)
-                return True, {"title": "Cadastrado", "description": ""}
+                return True, None
             
             except DuplicateKeyError:
                 print("CLASSDATABASE - chave duplicada")
-                return False, {"title": "cadastrar", 
-                               "description": "O usuário já existe"}
+                return False, error
         
     def validate_login(self, login, password):
         isValid, message = self.authentication.validate_login(login, password)
@@ -76,7 +75,7 @@ class Database:
         }
 
         try:
-            action = collection.update_one(
+            result = collection.update_one(
                 {"_id": self.activeUser["_id"]},
                 {"$set": {"routine": routineSubdocument}}    
             )
@@ -87,12 +86,12 @@ class Database:
             print("CLASSDATABASE - falha ao salvar rotina")
             return False
             
-    def read_routine(self):
+    def read_routine(self, user):
         collection = self.database["Users"]
 
         try:
             result = collection.find_one(
-                {"name": self.activeUser},
+                {"name": user},
                 {"_id": 0, "routine": 1}
             )
 
@@ -105,7 +104,7 @@ class Database:
         except Exception as error:
             print("CLASSDATABASE - rotina não encontrada: ", error)
 
-    def create_entry(self, entryData):
+    def create_entry(self, entryData, userName):
         collection = self.database["Entries"]
         fs = gridfs.GridFS(self.database)
 
@@ -127,15 +126,15 @@ class Database:
                 print("CLASSDATABASE - Erro ao salvar imagem:", error)
 
         try:
-            action = collection.insert_one(query)
-            entryId = action.inserted_id
-            self.add_entry_to_diary(entryId, self.activeUser)
+            result = collection.insert_one(query)
+            entryId = result.inserted_id
+            self.add_entry_to_diary(entryId, userName)
             print("CLASSDATABASE - entrada salva no banco de entradas")
-            return True, {"title": "Entrada salva", "description": "Entrada salva"}
+            return True, None
         
         except OperationFailure as error:
             print("CLASSDATABASE - falha ao salvar entrada") 
-            return False, {"title": "Falha ao salvar", "description": error}
+            return False, error
 
     def add_entry_to_diary(self, entryId, user):
         collection = self.database["Users"]
@@ -150,12 +149,12 @@ class Database:
         except OperationFailure as error:
             print(f"CLASSDATABASE - erro ao salvar entrada no diário: {error}")
 
-    def get_diary(self):
+    def get_diary(self, userName):
         users_collection = self.database["Users"]
         entries_collection = self.database["Entries"]
 
         try:
-            user = users_collection.find_one({"name": self.activeUser})
+            user = users_collection.find_one({"name": userName})
 
             if user:
                 diary = user.get("diary")
@@ -214,14 +213,43 @@ class Database:
             result = entries_collection.delete_one(filter)
             print(f"CLASSDATABASE - Entrada deletada")
 
-            return True, {"title": "Entrada excluída", "description": ""}
+            return True, None
 
         except Exception as error:
             print(f"CLASSDATABASE - Erro ao deletar entrada: {error}")
 
-            return False, {"title": "excluir entrada", "description": error}
+            return False, error
+        
+    def update_entry(self, entryId, newEntryData):
+        entries_collection = self.database["Entries"]
+        fs = gridfs.GridFS(self.database)
 
-    
+        query = {
+            "date": newEntryData.date
+        }
 
-    
+        if newEntryData.description:
+            query["description"] = newEntryData.description
 
+        if newEntryData.image:
+            try:
+                with open(newEntryData.image, "rb") as imageFile:
+                    fileId = fs.put(imageFile, filename = newEntryData.image.split("/")[-1])
+                    query["image_id"] = fileId
+                    print(f"CLASSDATABASE - imagem atualizada no gridFS com ID: {fileId}")
+
+            except Exception as error:
+                print("CLASSDATABASE - Erro ao atualizar imagem:", error)
+
+        try:
+            action = entries_collection.update_one(
+                {"_id": ObjectId(entryId)},
+                {"$set": query}
+            )
+
+            print("CLASSDATABASE - entrada atualizada no banco de entradas")
+            return True, None
+        
+        except OperationFailure as error:
+            print("CLASSDATABASE - falha ao atualizar entrada") 
+            return False, error

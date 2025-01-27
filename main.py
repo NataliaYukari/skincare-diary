@@ -1,6 +1,8 @@
-from view import View
-from model import Model, Database
 from controller import Controller
+from model import Model
+from model_database import Database 
+from view import View
+
 
 if __name__ == "__main__":
     database = Database()

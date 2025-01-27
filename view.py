@@ -1,16 +1,14 @@
-from controller import Controller
 import flet as ft
-from user import User
 from entry import Entry
+from user import User
 from skin_concerns import SkinConcerns
-
 
 
 class View:
     
     def __init__(self):
         self.controller = None
-        self.image_path = None
+        self.imagePath = None
 
         self.BEIGE = "#F2F1E9"
         self.DEEPBEIGE = "#F0D2AB"
@@ -533,10 +531,10 @@ class View:
 
     def entry_image_upload(self, e):
         if e.files:
-            self.image_path = e.files[0].path
+            self.imagePath = e.files[0].path
 
         image = ft.Image(
-            src= self.image_path, 
+            src= self.imagePath, 
             width= 535,
             height= 660,
             fit= ft.ImageFit.CONTAIN
@@ -552,7 +550,7 @@ class View:
     def create_entry(self, e):
         date = self.dateTextfield.value
         description = self.descriptionTextfield.value
-        image = self.image_path
+        image = self.imagePath
 
         entryData = Entry(date, description, image)
         self.controller.create_entry(entryData)
@@ -954,13 +952,14 @@ class View:
             auto_scroll= True, 
             runs_count= 4,
             max_extent= 250,
-            spacing= 20,
+            spacing= 10,
             run_spacing= 20,
+            child_aspect_ratio= 2.5
         )
 
         titleEntriesColumn = ft.Column(
             [title, self.entries],
-            alignment= ft.MainAxisAlignment.CENTER, 
+            alignment= ft.MainAxisAlignment.START, 
             horizontal_alignment= ft.CrossAxisAlignment.START,
         )
 
@@ -987,12 +986,13 @@ class View:
         self.page.add(self.diaryScreenColumn)
         self.page.update()
 
-    def update_entry_screen(self):
+    def update_entry_screen(self, entryData, imagePath):
 
-        entryDate = "Data da entrada"
-        description = "Descrição da pele"
+        entryDate = entryData["date"]
+        description = entryData["description"]
+
         image = ft.Image(
-            src= f"assets/images/produtos.jpg",
+            src_base64= imagePath,
             width= 535,
             height= 660,
             fit= ft.ImageFit.CONTAIN
@@ -1008,7 +1008,7 @@ class View:
             theme_style= ft.TextThemeStyle.HEADLINE_SMALL
         )
 
-        dateTextfield = ft.TextField(
+        self.updateDateTextfield = ft.TextField(
             value= entryDate,
             width= 390, 
             height= 40,
@@ -1022,7 +1022,7 @@ class View:
             theme_style= ft.TextThemeStyle.HEADLINE_SMALL
         )
 
-        descriptionTextfield = ft.TextField(
+        self.updateDescriptionTextfield = ft.TextField(
             value= description,
             multiline= True,
             min_lines= 10,
@@ -1032,8 +1032,11 @@ class View:
             filled= True, fill_color= self.WHITE
         )
 
-        imageUploadButton = ft.FilledButton(
+        filePicker = ft.FilePicker(on_result= self.entry_image_update)
+
+        imageUpdateButton = ft.FilledButton(
             text= "Upload de foto",
+            on_click= lambda _: filePicker.pick_files(),
             width=  240,
             height= 33,
             style= ft.ButtonStyle(
@@ -1049,6 +1052,7 @@ class View:
             text= "Deletar foto",
             width= 190,
             height= 33,
+            on_click= self.entry_image_delete,
             style= ft.ButtonStyle(
                 bgcolor= self.LIGHTGRAY,
                 shape= ft.RoundedRectangleBorder(radius= 12),
@@ -1058,7 +1062,7 @@ class View:
             )
         )
 
-        imageContainer = ft.Container(
+        self.updateImageContainer = ft.Container(
             content= image,
             width= 450,
             height= 375,
@@ -1068,6 +1072,7 @@ class View:
 
         updateEntryButton = ft.FilledButton(
             text= "Atualizar",
+            on_click= lambda e: self.update_entry(entryData["_id"]),
             style= ft.ButtonStyle(
                 padding= ft.Padding(40, 10, 40, 10),
                 bgcolor= {"": self.ROSEQUARTZ, "hovered": self.PALESALMON},
@@ -1077,8 +1082,8 @@ class View:
 
         leftColumn = ft.Column(
             controls= [
-                title, dateLabel, dateTextfield, 
-                descriptionLabel, descriptionTextfield
+                title, dateLabel, self.updateDateTextfield, 
+                descriptionLabel, self.updateDescriptionTextfield
             ],
             alignment= ft.MainAxisAlignment.CENTER,
             horizontal_alignment= ft.CrossAxisAlignment.START,
@@ -1086,20 +1091,20 @@ class View:
         )
 
         imageButtonRow = ft.Row(
-            controls = [imageUploadButton, imageDeleteButton],
+            controls = [imageUpdateButton, imageDeleteButton],
             alignment= ft.MainAxisAlignment.CENTER,
             vertical_alignment= ft.CrossAxisAlignment.CENTER
         )
 
         rightColumn = ft.Column(
-            controls= [ft.Container(height= 30), imageButtonRow, imageContainer],
+            controls= [ft.Container(height= 30), imageButtonRow, self.updateImageContainer],
             alignment= ft.MainAxisAlignment.CENTER,
             horizontal_alignment= ft.CrossAxisAlignment.CENTER,
             spacing= 15
         )
 
         buttonRow =  ft.Row(
-            controls= [self.return_button(), updateEntryButton],
+            controls= [self.return_button(self.return_to_diary), updateEntryButton],
             alignment= ft.MainAxisAlignment.CENTER,
             vertical_alignment= ft.CrossAxisAlignment.CENTER,
             spacing= 60
@@ -1112,19 +1117,41 @@ class View:
             spacing= 40
         )
 
-        updateEntryScreenFrame = ft.View(
-            route = "/",
+        mainColumn = ft.Column(
             controls= [mainRow, buttonRow],
             horizontal_alignment= ft.MainAxisAlignment.CENTER,
-            padding= ft.padding.all(40),
             spacing= 40
         )
-        updateEntryScreenFrame.bgcolor = self.BEIGE
-        return updateEntryScreenFrame
+
+        mainContainer = ft.Container(
+            content= mainColumn,
+            alignment= ft.alignment.center,
+            margin= ft.margin.only(top= 80)
+        )
+
+        self.page.clean()
+        self.page.add(mainContainer)
+        self.page.add(filePicker)
+        self.page.update()
+
+    def entry_image_update(self, e):
+        if e.files:
+            self.imagePath = e.files[0].path
+
+        image = ft.Image(
+            src= self.imagePath, 
+            width= 535,
+            height= 660,
+            fit= ft.ImageFit.CONTAIN
+        )
+
+        self.updateImageContainer.content = image
+        self.page.update()
 
     def entry_screen(self, entryData, imagePath):
         entryDate = entryData["date"]
         description = entryData["description"]
+
         image = ft.Image(
             src_base64= imagePath,
             width= 535,
@@ -1136,12 +1163,12 @@ class View:
             controls = [
                 ft.Text(
                     entryDate, font_family= "AlbertSans",
-                    theme_style= ft.TextThemeStyle.DISPLAY_SMALL
+                    theme_style= ft.TextThemeStyle.DISPLAY_MEDIUM
                 ),
                 ft.Container(width= 520)
             ],
             alignment= ft.MainAxisAlignment.CENTER,
-            vertical_alignment= ft.CrossAxisAlignment.CENTER
+            vertical_alignment= ft.CrossAxisAlignment.START
         )
 
         descriptionLabel = ft.Text(
@@ -1172,6 +1199,17 @@ class View:
 
         next_button = ft.FilledButton(
             text= "Próximo",
+            on_click= self.go_to_next_entry,
+            style= ft.ButtonStyle(
+                padding= ft.Padding(40, 10, 40, 10),
+                bgcolor= {"": self.ROSEQUARTZ, "hovered": self.PALESALMON},
+                text_style = ft.TextStyle(size= 22)
+            )
+        )
+
+        previous_button = ft.FilledButton(
+            text= "Anterior",
+            on_click= self.go_to_previous_entry,
             style= ft.ButtonStyle(
                 padding= ft.Padding(40, 10, 40, 10),
                 bgcolor= {"": self.ROSEQUARTZ, "hovered": self.PALESALMON},
@@ -1194,7 +1232,7 @@ class View:
         )
 
         buttonRow = ft.Row(
-            [self.return_button(self.return_to_diary), next_button],
+            [previous_button, self.return_button(self.return_to_diary), next_button],
             alignment= ft.MainAxisAlignment.CENTER,
             vertical_alignment= ft.CrossAxisAlignment.CENTER,
             spacing= 60
@@ -1207,17 +1245,23 @@ class View:
             spacing= 40
         )
 
+        mainContainer = ft.Container(
+            content= mainColumn,
+            margin= ft.margin.only(top= 60)
+        )
+
         self.page.clean()
-        self.page.add(mainColumn)
+        self.page.add(mainContainer)
         self.page.update()
 
     def add_button_to_diary_screen(self, entries_list):
-        for entry in entries_list:
+        for index, (entry) in enumerate(entries_list):
             button = ft.Container( 
                     content= ft.ListTile(    
                         title= ft.FilledButton(
                             text= entry["date"],
-                            on_click= lambda e, entry=entry: self.go_to_entry_screen(entry["_id"]),
+                            on_click= lambda e, entry=entry, index=index: 
+                                self.go_to_entry_screen(entry["_id"], index),
                             style= ft.ButtonStyle(
                                 color= ft.colors.BLACK,
                                 bgcolor= ft.colors.TRANSPARENT,
@@ -1255,8 +1299,8 @@ class View:
 
         self.page.update()
 
-    def go_to_entry_screen(self, entryId):
-        self.controller.go_to_entry_screen(entryId)
+    def go_to_entry_screen(self, entryId, index):
+        self.controller.go_to_entry_screen(entryId, index)
 
     def delete_entry(self, entry):
         self.controller.delete_entry(entry)
@@ -1264,6 +1308,19 @@ class View:
     def go_to_update_entry_screen(self, entryId):
         self.controller.go_to_update_entry_screen(entryId)
 
+    def update_entry(self, entryId):
+        newDate = self.updateDateTextfield.value
+        newDescription = self.updateDescriptionTextfield.value
+        newImage = self.imagePath
+
+        newEntryData = Entry(newDate, newDescription, newImage)
+        self.controller.update_entry(entryId, newEntryData)
+
+    def go_to_next_entry(self, e):
+        self.controller.go_to_next_entry()
+
+    def go_to_previous_entry(self, e):
+        self.controller.go_to_previous_entry()
 
     def return_button(self, action):
         returnButton = ft.FilledButton(
@@ -1290,9 +1347,11 @@ class View:
 
     def return_to_diary(self, e):
         self.page.clean()
+        
         self.page.add(self.diaryScreenColumn)
+        self.page.update()
 
-    def success_alert_modal(self, message, description):
+    def success_alert_modal(self, message, whereToReturn):
         ok_button = ft.FilledButton(
             text= "Ok",
             on_click= self.close_success_modal,
@@ -1308,10 +1367,10 @@ class View:
             modal= True, 
             bgcolor= self.ROSEQUARTZ,
             title= ft.Text(message + " com sucesso!"),
-            content= ft.Text(description),
+            content= ft.Text(""),
             actions= [ok_button],
             actions_alignment= ft.MainAxisAlignment.CENTER,
-            on_dismiss= self.return_to_main
+            on_dismiss= whereToReturn
         )
 
         self.page.open(self.success_modal)
