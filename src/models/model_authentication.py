@@ -5,6 +5,9 @@ from pymongo.errors import ConnectionFailure, DuplicateKeyError, OperationFailur
 
 
 class Authentication:
+    """Validates the user's login"""
+
+    
     def __init__(self):
         url = "mongodb+srv://nataliakawashisa:bananinha@ifpr.tffr4.mongodb.net/?retryWrites=true&w=majority&appName=IFPR"
         self.client = MongoClient(url, server_api=ServerApi('1'))

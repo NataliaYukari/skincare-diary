@@ -4,10 +4,11 @@ import gridfs
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from pymongo.errors import DuplicateKeyError, OperationFailure
-from model_authentication import Authentication
+from models.model_authentication import Authentication
 
 
 class Database:
+    
     def __init__(self):
         url = "mongodb+srv://nataliakawashisa:bananinha@ifpr.tffr4.mongodb.net/?retryWrites=true&w=majority&appName=IFPR"
         self.client = MongoClient(url, server_api=ServerApi('1'))
@@ -40,7 +41,7 @@ class Database:
                 action = collection.insert_one(query)
                 return True, None
             
-            except DuplicateKeyError:
+            except DuplicateKeyError as error:
                 print("CLASSDATABASE - chave duplicada")
                 return False, error
         

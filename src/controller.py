@@ -1,5 +1,5 @@
-from view import *
-from model import *
+from views.view import *
+from models.model import *
 
 
 class Controller:
@@ -10,7 +10,7 @@ class Controller:
         self.currentEntryIndex = 0
 
     def go_to_register_screen(self):
-        self.view.register_screen()
+        self.view.navigate_to("/registerScreen")
 
     def validate_user_data(self, userData):
         if not userData.username or not userData.password or not userData.email or not userData.birthday or not userData.skinType:
@@ -25,7 +25,7 @@ class Controller:
         result, message = self.model.create_user(userData)
             
         if result:
-            self.view.success_alert_modal(message["title"], self.view.return_to_login)
+            self.view.success_alert_modal(message["title"], self.view.navigate_to("/"))
         else:
             self.view.fail_alert_modal(message["title"], message["description"])
 
@@ -33,19 +33,23 @@ class Controller:
         isValid, message = self.model.validate_login(login, password)
 
         if not isValid:
-            self.view.login_fail_text(message)
+            loginScreen = self.view.routes["/"]
+            loginScreen.login_fail_text(message)
         else:
-            self.view.main_screen()
+            self.view.navigate_to("/mainScreen")
         
     def go_to_routine_form(self):
-        self.view.new_routine_screen()
+        self.view.navigate_to("/newRoutineScreen")
 
     def go_to_recommended_routine_screen(self):
         routine = self.model.get_routine()
 
         if routine:
             print("CLASSCONTROLLER - rotina encontrada")
-            self.view.recommended_routine_screen(routine)
+            screen = self.view.routes["/recommendedRoutineScreen"]
+            screen.recommended_routine_screen(routine)
+            self.view.navigate_to("/recommendedRoutineScreen")
+            
         else:
             print("CLASSCONTROLLER - rotina não encontrada")
             self.view.fail_alert_modal("consultar rotina", 
@@ -53,16 +57,19 @@ class Controller:
 
     def generate_routine(self, skinWorries):
         routine = self.model.generate_routine(skinWorries) 
-        self.view.recommended_routine_screen(routine)
+
+        screen = self.view.routes["/recommendedRoutineScreen"]
+        screen.recommended_routine_screen(routine)
+        self.view.navigate_to("/recommendedRoutineScreen")
        
     def go_to_add_entry_screen(self):
-        self.view.add_entry_screen()
+        self.view.navigate_to("/addEntryScreen")
 
     def create_entry(self, entryData):
         result, message = self.model.create_entry(entryData)
 
         if result:
-            self.view.success_alert_modal(message["title"], self.view.return_to_main)
+            self.view.success_alert_modal(message["title"], self.view.navigate_to("/mainScreen"))
         else:
             self.view.fail_alert_modal(message["title"], message["description"])
 
@@ -70,9 +77,11 @@ class Controller:
         result = self.model.get_diary()
 
         if result:
-            self.view.diary_screen(result)
+            screen = self.view.routes["/diaryScreen"]
+            screen.diary_screen(result)
+            self.view.navigate_to("/diaryScreen")
         else:
-            self.view.main_screen()
+            self.view.navigate_to("/mainScreen")
             self.view.fail_alert_modal("acessar diário", 
                                        "O diário está vazio. Crie novas entradas")
             
@@ -104,7 +113,10 @@ class Controller:
 
         if entryData:
             self.currentEntryindex = index
-            self.view.entry_screen(entryData, imagePath)
+
+            screen = self.view.routes["/entryScreen"]
+            screen.entry_screen(entryData, imagePath)
+            self.view.navigate_to("/entryScreen")
 
     def delete_entry(self, entry): 
         result, message = self.model.delete_entry(entry)
@@ -118,12 +130,14 @@ class Controller:
         entryData, imagePath = self.model.get_entry(entryId)
 
         if entryData:
-            self.view.update_entry_screen(entryData, imagePath)
+            screen = self.view.routes["/updateEntryScreen"]
+            screen.update_entry_screen(entryData, imagePath)
+            self.view.navigate_to("/updateEntryScreen")
 
     def update_entry(self, entryId, newEntryData):
         result, message = self.model.update_entry(entryId, newEntryData)
 
         if result == True:
-            self.view.success_alert_modal(message["title"], self.view.go_to_diary_screen)
+            self.view.success_alert_modal(message["title"], self.view.navigate_to("/diaryScreen"))
         else:
             self.view.fail_alert_modal(message["title"], message["description"])

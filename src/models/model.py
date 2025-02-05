@@ -1,6 +1,6 @@
 import base64
 from datetime import datetime
-from routine import Routine
+from models.routine import Routine
 
 
 class Model:
