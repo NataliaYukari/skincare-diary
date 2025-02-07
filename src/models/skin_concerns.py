@@ -1,5 +1,5 @@
 class SkinConcerns:
-    """Lida com as preocupações de pele do usuário"""
+    """Handles the user's skin concerns"""
 
     def __init__(self, wrinkles, acne, pores, pigmentation,
                  texture, irritation, dehydration, oil):

@@ -8,6 +8,8 @@ from models.model_authentication import Authentication
 
 
 class Database:
+    """Handles database queries"""
+
     
     def __init__(self):
         url = "mongodb+srv://nataliakawashisa:bananinha@ifpr.tffr4.mongodb.net/?retryWrites=true&w=majority&appName=IFPR"

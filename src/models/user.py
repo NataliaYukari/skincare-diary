@@ -1,5 +1,5 @@
 class User:
-    """ Lida com dados do usuário"""
+    """Handles the user's data"""
 
 
     def __init__(self, username, password, email, birthday, 
